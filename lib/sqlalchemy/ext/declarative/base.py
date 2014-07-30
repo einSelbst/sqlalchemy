@@ -33,7 +33,7 @@ def _declared_mapping_info(cls):
 
 
 def _as_declarative(cls, classname, dict_):
-    from .api import declared_attr
+    from .api import declared_attr, cascading_declared_attr
 
     # dict_ will be a dictproxy, which we can't write to, and we need to!
     dict_ = dict(dict_)
@@ -104,6 +104,12 @@ def _as_declarative(cls, classname, dict_):
                               "not applying to subclass %s."
                               % (base.__name__, name, base, cls))
                 continue
+            elif isinstance(obj, cascading_declared_attr):
+                ret = obj.__get__(obj, cls)
+                dict_[name] = column_copies[obj] = ret
+                if isinstance(ret, (Column, MapperProperty)) and \
+                    ret.doc is None:
+                    ret.doc = obj.__doc__
             elif base is not cls:
                 # we're a mixin.
                 if isinstance(obj, Column):
@@ -133,8 +139,8 @@ def _as_declarative(cls, classname, dict_):
                         "be declared as @declared_attr callables "
                         "on declarative mixin classes.")
                 elif isinstance(obj, declarative_props):
-                    dict_[name] = ret = \
-                        column_copies[obj] = getattr(cls, name)
+                    ret = getattr(cls, name)
+                    dict_[name] = column_copies[obj] = ret
                     if isinstance(ret, (Column, MapperProperty)) and \
                             ret.doc is None:
                         ret.doc = obj.__doc__

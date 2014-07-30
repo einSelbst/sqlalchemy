@@ -164,6 +164,26 @@ class declared_attr(interfaces._MappedAttribute, property):
     def __get__(desc, self, cls):
         return desc.fget(cls)
 
+class cascading_declared_attr(declared_attr):
+    """A :class:`.declared_attr` that will be invoked for all subclasses.
+
+    Use :class:`.cascading_declared_attr` when a particular ``@declared_attr``
+    needs to be invoked individually for each subclass in a hierarchy::
+
+        class HasId(object):
+            @cascading_declared_attr
+            def id(cls):
+                if has_inherited_table(cls):
+                    return Column(Integer, ForeignKey("content.id"), primary_key=True)
+                else:
+                    return Column(Integer, primary_key=True)
+
+        class Content(HasId, Base):
+            pass
+
+        class SubContent(Content):
+            pass
+    """
 
 def declarative_base(bind=None, metadata=None, mapper=None, cls=object,
                      name='Base', constructor=_declarative_constructor,
